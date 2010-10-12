@@ -16,4 +16,56 @@ def table_name_diff(cur1, cur2):
     else:
         return (list(diff1), list(diff2))
 
+def row_count(cur, table_name):
+    result = cur.execute("SELECT Count(*) FROM " + table_name + ";" )
+    return result.next()[0]
+
+def format_table_diff(name1, name2, db1, db2):
+    result = ""
+    tnd = table_name_diff(db1.cursor(), db2.cursor())
+    if tnd: # First print tables which exist in one but not the other
+        for d in tnd[1]:
+            kind, n, n2, ind, sql = __table_columns(db2.cursor(), d)
+            result += name2 + "," + str(ind) + "\n"
+            result += "> " + sql + "\n"
+            result += "> " + str(row_count(db2.cursor(), d)) + " rows\n"
+        for d in tnd[0]:
+            kind, n, n2, ind, sql = __table_columns(db1.cursor(), d)
+            result += name1 + "," + str(ind) + "\n"
+            result += "< " + sql + "\n"
+            result += "< " + str(row_count(db1.cursor(), d)) + " rows\n"
+    tcd = table_column_diff(db1.cursor(), db2.cursor())
+    if tcd:
+        for old, new in tcd:
+            oldkind, oldn, oldn2, oldind, oldsql = old
+            newkind, newn, newn2, newind, newsql = new
+            result += name2 + "," + str(newind) + "\n"
+            result += "> " + newsql + "\n"
+            result += "> " + str(row_count(db2.cursor(), oldn)) + " rows\n"
+            result += "---\n"
+            result += "< " + oldsql + "\n"
+            result += "< " + str(row_count(db1.cursor(), newn)) + " rows\n"
+    return result
+
+def table_column_diff(cur1, cur2):
+    exclude_tables = []
+    tnd = table_name_diff(cur1, cur2)
+    if tnd:
+        exclude_tables += tnd[0]
+        exclude_tables += tnd[1]
+    names = __table_names(cur1) - set(exclude_tables)
+    diffs = []
+    for n in names:
+        col1 = __table_columns(cur1, n)
+        col2 = __table_columns(cur2, n)
+        if col1 != col2:
+            diffs.append( (col1, col2) )
+    if len(diffs) > 0:
+        return diffs
+    else:
+        return False
+
+def __table_columns(cur, name):
+    cur.execute("SELECT * FROM sqlite_master WHERE type='table' AND name= ? ;", (name, ))
+    return cur.next()
 

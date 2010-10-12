@@ -43,6 +43,31 @@ def format_table_diff(name1, name2, db1, db2):
             result += "< " + str(row_count(db1.cursor(), newn)) + " rows\n"
     return result
 
+def table_diff(db1, db2, name):
+    tbl1, ind1 = table_definition(db1.cursor(), name)
+    tbl2, ind2 = table_definition(db2.cursor(), name)
+    table_diff = False
+    if (tbl1 != tbl2):
+        table_diff = (tbl1, tbl2)
+    index_diff = []
+    #First compute diffs of indices held in common
+    ind1_map = dict( [ (i[1], i) for i in ind1] )
+    ind2_map = dict( [ (i[1], i) for i in ind2] )
+    for nm in set(ind1_map.keys()).intersection(set(ind2_map.keys())):
+        if ind1_map[nm] != ind2_map[nm]:
+            index_diff.append( ( ind1_map[nm], ind2_map[nm]) )
+    #Now compute indices held by one but not the other
+    for nm in set(ind1_map.keys()) - set(ind2_map.keys()):
+        index_diff.append( (ind1_map[nm], None) )
+    for nm in set(ind2_map.keys()) - set(ind1_map.keys()):
+        index_diff.append( (ind2_map[nm], None) )
+
+    if (not table_diff) and (len(index_diff) == 0):
+        return False
+    else:
+        return (table_diff, index_diff)
+
+
 def table_column_diff(cur1, cur2):
     exclude_tables = []
     tnd = table_name_diff(cur1, cur2)

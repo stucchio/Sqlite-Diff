@@ -38,6 +38,22 @@ class TestTableHeaderComparison(unittest.TestCase):
         self.db2.commit()
         self.assertEqual(sqlite3_diff.table_name_diff(self.db1.cursor(), self.db2.cursor()), ([u'futures'], [u'options']) )
 
+class TestUtilityFunctions(unittest.TestCase):
+    def setUp(self):
+        self.db = sqlite3.connect(":memory:")
+        self.db.cursor().execute("create table stocks (date text, trans text, symbol text, qty real, price real);")
+        self.db.cursor().execute("create table bonds (date text, trans text, symbol text, qty real, price real);")
+        self.db.cursor().execute("CREATE INDEX idx_stock_symbol ON stocks (symbol);")
+
+    def test_table_columns(self):
+        self.assertEquals(sqlite3_diff.table_names(self.db.cursor()),
+                          set([u'bonds', u'stocks']))
+        self.assertEquals(sqlite3_diff.table_columns(self.db.cursor(), "stocks"),
+                          (u'table', u'stocks', u'stocks', 2, u'CREATE TABLE stocks (date text, trans text, symbol text, qty real, price real)'))
+        self.assertEquals(sqlite3_diff.table_definition(self.db.cursor(), "stocks"),
+                          ((u'table', u'stocks', u'stocks', 2, u'CREATE TABLE stocks (date text, trans text, symbol text, qty real, price real)'), [(u'index', u'idx_stock_symbol', u'stocks', 4, u'CREATE INDEX idx_stock_symbol ON stocks (symbol)')]))
+
+
 class TestTableHeaderComparisonFormatting(unittest.TestCase):
     def setUp(self):
         self.db1 = sqlite3.connect(":memory:")

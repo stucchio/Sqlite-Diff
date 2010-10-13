@@ -40,18 +40,37 @@ def format_one_table_diff(diff, db1, db2):
     """Assumes we are given output of table_diff function."""
     if not diff:
         return ""
-    oldkind, oldnm, old_tbl_nm, oldind, oldsql = diff[0][0]
-    newkind, newnm, new_tbl_nm, newind, newsql = diff[0][1]
     result = ""
-    result += "Table(" + new_tbl_nm + ")," + str(newind) + "\n"
-    result += "> " + newsql + "\n"
-    result += "> " + str(row_count(db2.cursor(), new_tbl_nm)) + " rows\n"
-    result += "---\n"
-    #result += "Table(" + old_tbl_nm + ")," + str(oldind) + "\n"
-    result += "< " + oldsql + "\n"
-    result += "< " + str(row_count(db1.cursor(), new_tbl_nm)) + " rows\n"
+    #First display if one table has differing headers
+    if diff[0]:
+        oldkind, oldnm, old_tbl_nm, oldind, oldsql = diff[0][0]
+        newkind, newnm, new_tbl_nm, newind, newsql = diff[0][1]
+        result += "Table(" + new_tbl_nm + ")," + str(newind) + "\n"
+        result += "> " + newsql + "\n"
+        result += "> " + str(row_count(db2.cursor(), new_tbl_nm)) + " rows\n"
+        result += "---\n"
+        #result += "Table(" + old_tbl_nm + ")," + str(oldind) + "\n"
+        result += "< " + oldsql + "\n"
+        result += "< " + str(row_count(db1.cursor(), new_tbl_nm)) + " rows\n"
+    #Then display differing indexes
+    if diff[1]:
+        for old, new in diff[1]: # One of these variables stores the table_name
+            table_name = None
+            rootpage = None
+            if old:
+                table_name = old[2]
+                rootpage = old[3]
+            if new:
+                table_name = new[2]
+                rootpage = new[3]
+            result += "Table("+table_name+"),"+str(rootpage) + "\n"
+            if new:
+                result += "> " + str(new[4]) + "\n"
+            if old and new:
+                result += "---\n"
+            if old:
+                result += "< " + str(old[4]) + "\n"
     return result
-
 
 def table_diff(db1, db2, name):
     tbl1, ind1 = table_definition(db1.cursor(), name)
@@ -70,7 +89,7 @@ def table_diff(db1, db2, name):
     for nm in set(ind1_map.keys()) - set(ind2_map.keys()):
         index_diff.append( (ind1_map[nm], None) )
     for nm in set(ind2_map.keys()) - set(ind1_map.keys()):
-        index_diff.append( (ind2_map[nm], None) )
+        index_diff.append( (None, ind2_map[nm]) )
 
     if (not table_diff) and (len(index_diff) == 0):
         return False

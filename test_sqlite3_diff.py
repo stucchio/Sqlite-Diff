@@ -118,6 +118,34 @@ class TestTableHeaderComparisonFormatting(unittest.TestCase):
         self.__create_stocks_bonds()
         self.assertEqual(sqlite3_diff.format_table_diff(self.db1, self.db2), '')
 
+    def test_format_index(self):
+        self.__create_stocks_bonds()
+        self.db1.cursor().execute("CREATE INDEX idx_stock_symbol ON stocks (symbol);")
+        self.assertEqual(sqlite3_diff.format_table_diff(self.db1, self.db2),
+u"""Table(stocks),4
+< CREATE INDEX idx_stock_symbol ON stocks (symbol)
+"""
+                         )
+        self.db2.cursor().execute("CREATE INDEX idx_stock_symbol ON stocks (date);")
+        self.assertEqual(sqlite3_diff.format_table_diff(self.db1, self.db2),
+u"""Table(stocks),4
+> CREATE INDEX idx_stock_symbol ON stocks (date)
+---
+< CREATE INDEX idx_stock_symbol ON stocks (symbol)
+"""
+                         )
+
+    def test_format_index2(self):
+        self.__create_stocks_bonds()
+        self.db2.cursor().execute("CREATE INDEX idx_stock_symbol ON stocks (date);")
+        self.assertEqual(sqlite3_diff.format_table_diff(self.db1, self.db2),
+u"""Table(stocks),4
+> CREATE INDEX idx_stock_symbol ON stocks (date)
+"""
+                         )
+
+
+
     def test_different_table_def(self):
         self.__create_stocks_bonds()
         self.db1.cursor().execute("create table futures (date text, trans text, symbol text, qty real, price real);")

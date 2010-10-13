@@ -137,13 +137,12 @@ u"""Table(stocks),4
 
     def test_format_index2(self):
         self.__create_stocks_bonds()
-        self.db2.cursor().execute("CREATE INDEX idx_stock_symbol ON stocks (date);")
+        self.db2.cursor().execute("CREATE INDEX idx_stock_dates ON stocks (date);")
         self.assertEqual(sqlite3_diff.format_table_diff(self.db1, self.db2),
 u"""Table(stocks),4
-> CREATE INDEX idx_stock_symbol ON stocks (date)
+> CREATE INDEX idx_stock_dates ON stocks (date)
 """
                          )
-
 
 
     def test_different_table_def(self):

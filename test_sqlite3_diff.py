@@ -92,11 +92,11 @@ class TestTableHeaderComparisonFormatting(unittest.TestCase):
 
     def test_remove_row_format(self):
         self.__create_stocks_bonds()
-        self.assertEqual(sqlite3_diff.format_table_diff("db1", "db2", self.db1, self.db2), '')
+        self.assertEqual(sqlite3_diff.format_table_diff(self.db1, self.db2), '')
         self.db1.cursor().execute("create table futures (date text, trans text, symbol text, qty real, price real);")
         self.db1.commit()
-        self.assertEqual(sqlite3_diff.format_table_diff("db1", "db2", self.db1, self.db2),
-                         u"""db1,4
+        self.assertEqual(sqlite3_diff.format_table_diff(self.db1, self.db2),
+                         u"""Table(futures),4
 < CREATE TABLE futures (date text, trans text, symbol text, qty real, price real)
 < 0 rows
 """
@@ -104,11 +104,11 @@ class TestTableHeaderComparisonFormatting(unittest.TestCase):
 
     def test_add_row_format(self):
         self.__create_stocks_bonds()
-        self.assertEqual(sqlite3_diff.format_table_diff("db1", "db2", self.db1, self.db2), '')
+        self.assertEqual(sqlite3_diff.format_table_diff(self.db1, self.db2), '')
         self.db2.cursor().execute("create table futures (date text, trans text, symbol text, qty real, price real);")
         self.db2.commit()
-        self.assertEqual(sqlite3_diff.format_table_diff("db1", "db2", self.db1, self.db2),
-                         u"""db2,4
+        self.assertEqual(sqlite3_diff.format_table_diff(self.db1, self.db2),
+                         u"""Table(futures),4
 > CREATE TABLE futures (date text, trans text, symbol text, qty real, price real)
 > 0 rows
 """
@@ -116,14 +116,14 @@ class TestTableHeaderComparisonFormatting(unittest.TestCase):
 
     def test_null_results(self):
         self.__create_stocks_bonds()
-        self.assertEqual(sqlite3_diff.format_table_diff("db1", "db2", self.db1, self.db2), '')
+        self.assertEqual(sqlite3_diff.format_table_diff(self.db1, self.db2), '')
 
     def test_different_table_def(self):
         self.__create_stocks_bonds()
         self.db1.cursor().execute("create table futures (date text, trans text, symbol text, qty real, price real);")
         self.db2.cursor().execute("create table futures (date text, symbol text, qty real, price real);")
-        self.assertEqual(sqlite3_diff.format_table_diff("db1", "db2", self.db1, self.db2),
-                         u"""db2,4
+        self.assertEqual(sqlite3_diff.format_table_diff(self.db1, self.db2),
+                         u"""Table(futures),4
 > CREATE TABLE futures (date text, symbol text, qty real, price real)
 > 0 rows
 ---
@@ -132,11 +132,11 @@ class TestTableHeaderComparisonFormatting(unittest.TestCase):
 """
                          )
         self.db2.cursor().execute("create table options (date text, symbol text, qty real, price real);")
-        self.assertEqual(sqlite3_diff.format_table_diff("db1", "db2", self.db1, self.db2),
-                         u"""db2,5
+        self.assertEqual(sqlite3_diff.format_table_diff(self.db1, self.db2),
+                         u"""Table(options),5
 > CREATE TABLE options (date text, symbol text, qty real, price real)
 > 0 rows
-db2,4
+Table(futures),4
 > CREATE TABLE futures (date text, symbol text, qty real, price real)
 > 0 rows
 ---

@@ -16,32 +16,42 @@ def row_count(cur, table_name):
     result = cur.execute("SELECT Count(*) FROM " + table_name + ";" )
     return result.next()[0]
 
-def format_table_diff(name1, name2, db1, db2):
+def format_table_diff(db1, db2):
     result = ""
     tnd = table_name_diff(db1.cursor(), db2.cursor())
     if tnd: # First print tables which exist in one but not the other
         for d in tnd[1]:
             kind, nm, tbl_nm, ind, sql = table_columns(db2.cursor(), d)
-            result += name2+ "," + str(ind) + "\n"
+            result += "Table("+ tbl_nm + ")," + str(ind) + "\n"
             result += "> " + sql + "\n"
             result += "> " + str(row_count(db2.cursor(), d)) + " rows\n"
         for d in tnd[0]:
             kind, nm, tbl_nm, ind, sql = table_columns(db1.cursor(), d)
-            result += name1 + "," + str(ind) + "\n"
+            result += "Table("+ tbl_nm + ")," + str(ind) + "\n"
             result += "< " + sql + "\n"
             result += "< " + str(row_count(db1.cursor(), d)) + " rows\n"
-    tcd = table_column_diff(db1.cursor(), db2.cursor())
-    if tcd:
-        for old, new in tcd:
-            oldkind, oldn, oldn2, oldind, oldsql = old
-            newkind, newn, newn2, newind, newsql = new
-            result += name2 + "," + str(newind) + "\n"
-            result += "> " + newsql + "\n"
-            result += "> " + str(row_count(db2.cursor(), oldn)) + " rows\n"
-            result += "---\n"
-            result += "< " + oldsql + "\n"
-            result += "< " + str(row_count(db1.cursor(), newn)) + " rows\n"
+    #Now print tables which differ
+    shared = shared_tables(db1.cursor(), db2.cursor())
+    for n in shared:
+        result += format_one_table_diff(table_diff(db1, db2, n), db1, db2)
     return result
+
+def format_one_table_diff(diff, db1, db2):
+    """Assumes we are given output of table_diff function."""
+    if not diff:
+        return ""
+    oldkind, oldnm, old_tbl_nm, oldind, oldsql = diff[0][0]
+    newkind, newnm, new_tbl_nm, newind, newsql = diff[0][1]
+    result = ""
+    result += "Table(" + new_tbl_nm + ")," + str(newind) + "\n"
+    result += "> " + newsql + "\n"
+    result += "> " + str(row_count(db2.cursor(), new_tbl_nm)) + " rows\n"
+    result += "---\n"
+    #result += "Table(" + old_tbl_nm + ")," + str(oldind) + "\n"
+    result += "< " + oldsql + "\n"
+    result += "< " + str(row_count(db1.cursor(), new_tbl_nm)) + " rows\n"
+    return result
+
 
 def table_diff(db1, db2, name):
     tbl1, ind1 = table_definition(db1.cursor(), name)
@@ -73,12 +83,7 @@ def shared_tables(cur1, cur2):
     return set(names1).intersection(set(names2))
 
 def table_column_diff(cur1, cur2):
-    exclude_tables = []
-    tnd = table_name_diff(cur1, cur2)
-    if tnd:
-        exclude_tables += tnd[0]
-        exclude_tables += tnd[1]
-    names = table_names(cur1) - set(exclude_tables)
+    names = shared_tables(cur1, cur2)
     diffs = []
     for n in names:
         col1 = table_columns(cur1, n)

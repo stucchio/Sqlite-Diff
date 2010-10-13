@@ -45,6 +45,10 @@ class TestTableHeaderComparison(unittest.TestCase):
         self.db1.cursor().execute("create table bonds (date text, trans text, symbol text, qty real, price real);")
         self.assertEqual(sqlite3_diff.table_column_diff(self.db1.cursor(), self.db2.cursor()), [((u'table', u'stocks', u'stocks', 2, u'CREATE TABLE stocks (date text, trans text, symbol text, qty real, price real)'), (u'table', u'stocks', u'stocks', 2, u'CREATE TABLE stocks (date text, symbol text, qty real, price real)'))])
 
+    def test_shared_table_names(self):
+        self.__create_stocks_bonds()
+        self.assertEqual(sqlite3_diff.shared_tables(self.db1.cursor(), self.db2.cursor()), set([u'stocks', u'bonds']))
+
     def test_compare_same_tables(self):
         self.__create_stocks_bonds()
         self.assertFalse(sqlite3_diff.table_name_diff(self.db1.cursor(), self.db2.cursor()))

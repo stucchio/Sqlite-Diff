@@ -67,6 +67,10 @@ def table_diff(db1, db2, name):
     else:
         return (table_diff, index_diff)
 
+def shared_tables(cur1, cur2):
+    names1 = table_names(cur1)
+    names2 = table_names(cur2)
+    return set(names1).intersection(set(names2))
 
 def table_column_diff(cur1, cur2):
     exclude_tables = []

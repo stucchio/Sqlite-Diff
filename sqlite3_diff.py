@@ -116,7 +116,7 @@ def table_column_diff(cur1, cur2):
 
 def table_definition(cur, tbl_name):
     tbl = cur.execute("SELECT * FROM sqlite_master WHERE type='table' AND name= ? ORDER BY name;", (tbl_name, )).next()
-    indexes = list(cur.execute("SELECT * FROM sqlite_master WHERE type='index' AND tbl_name= ? ORDER BY name;", (tbl_name, )))
+    indexes = list(cur.execute("SELECT * FROM sqlite_master WHERE type != 'table' AND tbl_name= ? ORDER BY name;", (tbl_name, )))
     return (tbl, indexes)
 
 def table_columns(cur, name):

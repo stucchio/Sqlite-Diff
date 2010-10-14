@@ -25,11 +25,26 @@ class TestTableHeaderComparison(unittest.TestCase):
         self.db2.cursor().execute("CREATE INDEX idx_stock_symbol ON stocks (trans);")
         self.assertEquals(sqlite3_diff.table_diff(self.db1, self.db2, "stocks"),
                           (False, [((u'index', u'idx_stock_symbol', u'stocks', 4, u'CREATE INDEX idx_stock_symbol ON stocks (symbol)'), (u'index', u'idx_stock_symbol', u'stocks', 4, u'CREATE INDEX idx_stock_symbol ON stocks (trans)'))]))
+
+    def test_table_diff_trigger(self):
+        self.__create_stocks_bonds()
+        #Test whether we get correct diff for different indices
+        self.assertFalse(sqlite3_diff.table_diff(self.db1, self.db2, "stocks"))
+        trigger_str = u"""CREATE TRIGGER insert_stock_time AFTER INSERT ON stocks
+        BEGIN
+        UPDATE stocks SET date = DATETIME('NOW')
+        WHERE rowid = new.rowid;
+        END"""
+        self.db1.cursor().execute(trigger_str)
+        self.assertEquals(sqlite3_diff.table_diff(self.db1, self.db2, "stocks"),
+                          (False, [((u'trigger', u'insert_stock_time', u'stocks', 0, trigger_str), None)]) )
+
+    def test_different_table_definition(self):
         #Now check if we find a different table definition
         self.db1.cursor().execute("create table futures (date text, trans text, symbol text, qty real, price real);")
         self.db2.cursor().execute("create table futures (date text, symbol text, qty real, price real);")
         self.assertEquals(sqlite3_diff.table_diff(self.db1, self.db2, "futures"),
-                          (( (u'table', u'futures', u'futures', 5, u'CREATE TABLE futures (date text, trans text, symbol text, qty real, price real)'), (u'table', u'futures', u'futures', 5, u'CREATE TABLE futures (date text, symbol text, qty real, price real)') ),
+                          (( (u'table', u'futures', u'futures', 2, u'CREATE TABLE futures (date text, trans text, symbol text, qty real, price real)'), (u'table', u'futures', u'futures', 2, u'CREATE TABLE futures (date text, symbol text, qty real, price real)') ),
                            []))
 
     def test_compare_same_table_columns(self):

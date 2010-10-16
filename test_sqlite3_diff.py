@@ -47,11 +47,23 @@ class TestTableHeaderComparison(unittest.TestCase):
                           (( (u'table', u'futures', u'futures', 2, u'CREATE TABLE futures (date text, trans text, symbol text, qty real, price real)'), (u'table', u'futures', u'futures', 2, u'CREATE TABLE futures (date text, symbol text, qty real, price real)') ),
                            []))
 
-    def test_compare_same_table_columns(self):
+    def test_table_columns(self):
+        self.db1.cursor().execute("create table stocks (date text, trans text, symbol text, qty real, price real, PRIMARY KEY (symbol, trans) );")
+        self.assertEqual(sqlite3_diff.table_columns(self.db1.cursor(), "stocks"),
+                         [(0, u'date', u'text', 0, None, 0), (1, u'trans', u'text', 0, None, 1), (2, u'symbol', u'text', 0, None, 1), (3, u'qty', u'real', 0, None, 0), (4, u'price', u'real', 0, None, 0)])
+        self.db1.cursor().execute("create table bonds (date text, trans text, symbol text PRIMARY KEY , qty real, price real );")
+        self.assertEqual(sqlite3_diff.table_columns(self.db1.cursor(), "bonds"),
+                         [(0, u'date', u'text', 0, None, 0), (1, u'trans', u'text', 0, None, 0), (2, u'symbol', u'text', 0, None, 1), (3, u'qty', u'real', 0, None, 0), (4, u'price', u'real', 0, None, 0)])
+
+        #Now test finding primary keys
+        self.assertEqual(sqlite3_diff.primary_key(self.db1.cursor(), "stocks"), [(1, u'trans', u'text', 0, None, 1), (2, u'symbol', u'text', 0, None, 1)])
+        self.assertEqual(sqlite3_diff.primary_key(self.db1.cursor(), "bonds"), [(2, u'symbol', u'text', 0, None, 1)])
+
+    def test_compare_same_sqlite_master_table_def(self):
         self.__create_stocks_bonds() #Both tables are the same
         self.assertFalse(sqlite3_diff.table_column_diff(self.db1.cursor(), self.db2.cursor()))
 
-    def test_compare_different_table_columns(self):
+    def test_compare_different_sqlite_master_table_def(self):
         self.db1.cursor().execute("create table stocks (date text, trans text, symbol text, qty real, price real);")
         self.db2.cursor().execute("create table stocks (date text, symbol text, qty real, price real);")
         self.assertEqual(sqlite3_diff.table_column_diff(self.db1.cursor(), self.db2.cursor()),
@@ -83,10 +95,10 @@ class TestUtilityFunctions(unittest.TestCase):
         self.db.cursor().execute("create table bonds (date text, trans text, symbol text, qty real, price real);")
         self.db.cursor().execute("CREATE INDEX idx_stock_symbol ON stocks (symbol);")
 
-    def test_table_columns(self):
+    def test_sqlite_master_table_def(self):
         self.assertEquals(sqlite3_diff.table_names(self.db.cursor()),
                           set([u'bonds', u'stocks']))
-        self.assertEquals(sqlite3_diff.table_columns(self.db.cursor(), "stocks"),
+        self.assertEquals(sqlite3_diff.sqlite_master_table_def(self.db.cursor(), "stocks"),
                           (u'table', u'stocks', u'stocks', 2, u'CREATE TABLE stocks (date text, trans text, symbol text, qty real, price real)'))
         self.assertEquals(sqlite3_diff.table_definition(self.db.cursor(), "stocks"),
                           ((u'table', u'stocks', u'stocks', 2, u'CREATE TABLE stocks (date text, trans text, symbol text, qty real, price real)'), [(u'index', u'idx_stock_symbol', u'stocks', 4, u'CREATE INDEX idx_stock_symbol ON stocks (symbol)')]))

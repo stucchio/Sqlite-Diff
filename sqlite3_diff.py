@@ -21,12 +21,12 @@ def format_table_diff(db1, db2):
     tnd = table_name_diff(db1.cursor(), db2.cursor())
     if tnd: # First print tables which exist in one but not the other
         for d in tnd[1]:
-            kind, nm, tbl_nm, ind, sql = table_columns(db2.cursor(), d)
+            kind, nm, tbl_nm, ind, sql = sqlite_master_table_def(db2.cursor(), d)
             result += "Table("+ tbl_nm + ")," + str(ind) + "\n"
             result += "> " + sql + "\n"
             result += "> " + str(row_count(db2.cursor(), d)) + " rows\n"
         for d in tnd[0]:
-            kind, nm, tbl_nm, ind, sql = table_columns(db1.cursor(), d)
+            kind, nm, tbl_nm, ind, sql = sqlite_master_table_def(db1.cursor(), d)
             result += "Table("+ tbl_nm + ")," + str(ind) + "\n"
             result += "< " + sql + "\n"
             result += "< " + str(row_count(db1.cursor(), d)) + " rows\n"
@@ -105,8 +105,8 @@ def table_column_diff(cur1, cur2):
     names = shared_tables(cur1, cur2)
     diffs = []
     for n in names:
-        col1 = table_columns(cur1, n)
-        col2 = table_columns(cur2, n)
+        col1 = sqlite_master_table_def(cur1, n)
+        col2 = sqlite_master_table_def(cur2, n)
         if col1 != col2:
             diffs.append( (col1, col2) )
     if len(diffs) > 0:
@@ -119,7 +119,29 @@ def table_definition(cur, tbl_name):
     indexes = list(cur.execute("SELECT * FROM sqlite_master WHERE type != 'table' AND tbl_name= ? ORDER BY name;", (tbl_name, )))
     return (tbl, indexes)
 
-def table_columns(cur, name):
+def table_columns(cur, table_name):
+    """Return a list of columns in a given table.
+
+    Implementation note: I *assume* that the 6'th column of rows return by the
+    PRAGMA TABLE_INFO(...) command is 1 if the column is a primary key, 0 otherwise.
+
+    In some simple experiments, this appears to be the case. But documentation is scant...
+    """
+    cur.execute("PRAGMA TABLE_INFO(" + table_name + ");")
+    return list(cur)
+
+def primary_key(cur, table_name):
+    """Return a list of columns in the primary key.
+
+    Implementation note: I *assume* that the 6'th column of rows return by the
+    PRAGMA TABLE_INFO(...) command is 1 if the column is a primary key, 0 otherwise.
+
+    In some simple experiments, this appears to be the case. But documentation is scant...
+    """
+    return [c for c in table_columns(cur, table_name) if c[5] == 1]
+
+def sqlite_master_table_def(cur, name):
+    """Gets the columns of a table."""
     cur.execute("SELECT * FROM sqlite_master WHERE type='table' AND name= ? ;", (name, ))
     return cur.next()
 

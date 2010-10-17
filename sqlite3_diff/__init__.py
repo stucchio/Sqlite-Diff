@@ -12,7 +12,7 @@ def table_name_diff(cur1, cur2):
     else:
         return (list(diff1), list(diff2))
 
-def table_diff(db1, db2, name):
+def table_header_diff(db1, db2, name):
     tbl1, ind1 = utils.table_definition(db1.cursor(), name)
     tbl2, ind2 = utils.table_definition(db2.cursor(), name)
     table_diff = False

@@ -15,35 +15,35 @@ class TestTableHeaderComparison(unittest.TestCase):
         self.db1.commit()
         self.db2.commit()
 
-    def test_table_diff(self):
+    def test_table_header_diff(self):
         self.__create_stocks_bonds()
         #Test whether we get correct diff for different indices
-        self.assertFalse(diff.table_diff(self.db1, self.db2, "stocks"))
+        self.assertFalse(diff.table_header_diff(self.db1, self.db2, "stocks"))
         self.db1.cursor().execute("CREATE INDEX idx_stock_symbol ON stocks (symbol);")
-        self.assertEquals(diff.table_diff(self.db1, self.db2, "stocks"),
+        self.assertEquals(diff.table_header_diff(self.db1, self.db2, "stocks"),
                           (False, [((u'index', u'idx_stock_symbol', u'stocks', 4, u'CREATE INDEX idx_stock_symbol ON stocks (symbol)'), None)]))
         self.db2.cursor().execute("CREATE INDEX idx_stock_symbol ON stocks (trans);")
-        self.assertEquals(diff.table_diff(self.db1, self.db2, "stocks"),
+        self.assertEquals(diff.table_header_diff(self.db1, self.db2, "stocks"),
                           (False, [((u'index', u'idx_stock_symbol', u'stocks', 4, u'CREATE INDEX idx_stock_symbol ON stocks (symbol)'), (u'index', u'idx_stock_symbol', u'stocks', 4, u'CREATE INDEX idx_stock_symbol ON stocks (trans)'))]))
 
-    def test_table_diff_trigger(self):
+    def test_table_header_diff_trigger(self):
         self.__create_stocks_bonds()
         #Test whether we get correct diff for different indices
-        self.assertFalse(diff.table_diff(self.db1, self.db2, "stocks"))
+        self.assertFalse(diff.table_header_diff(self.db1, self.db2, "stocks"))
         trigger_str = u"""CREATE TRIGGER insert_stock_time AFTER INSERT ON stocks
         BEGIN
         UPDATE stocks SET date = DATETIME('NOW')
         WHERE rowid = new.rowid;
         END"""
         self.db1.cursor().execute(trigger_str)
-        self.assertEquals(diff.table_diff(self.db1, self.db2, "stocks"),
+        self.assertEquals(diff.table_header_diff(self.db1, self.db2, "stocks"),
                           (False, [((u'trigger', u'insert_stock_time', u'stocks', 0, trigger_str), None)]) )
 
     def test_different_table_definition(self):
         #Now check if we find a different table definition
         self.db1.cursor().execute("create table futures (date text, trans text, symbol text, qty real, price real);")
         self.db2.cursor().execute("create table futures (date text, symbol text, qty real, price real);")
-        self.assertEquals(diff.table_diff(self.db1, self.db2, "futures"),
+        self.assertEquals(diff.table_header_diff(self.db1, self.db2, "futures"),
                           (( (u'table', u'futures', u'futures', 2, u'CREATE TABLE futures (date text, trans text, symbol text, qty real, price real)'), (u'table', u'futures', u'futures', 2, u'CREATE TABLE futures (date text, symbol text, qty real, price real)') ),
                            []))
 

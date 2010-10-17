@@ -1,7 +1,7 @@
 from sqlite3_diff import *
 from sqlite3_diff.utils import *
 
-def format_table_diff(db1, db2):
+def format_table_header_diff(db1, db2):
     result = ""
     tnd = table_name_diff(db1.cursor(), db2.cursor())
     if tnd: # First print tables which exist in one but not the other
@@ -18,11 +18,11 @@ def format_table_diff(db1, db2):
     #Now print tables which differ
     shared = shared_tables(db1.cursor(), db2.cursor())
     for n in shared:
-        result += format_one_table_diff(table_diff(db1, db2, n), db1, db2)
+        result += format_one_table_header_diff(table_header_diff(db1, db2, n), db1, db2)
     return result
 
-def format_one_table_diff(diff, db1, db2):
-    """Assumes we are given output of table_diff function."""
+def format_one_table_header_diff(diff, db1, db2):
+    """Assumes we are given output of table_header_diff function."""
     if not diff:
         return ""
     result = ""

@@ -18,10 +18,10 @@ class TestTableHeaderComparisonFormatting(unittest.TestCase):
 
     def test_remove_row_format(self):
         self.__create_stocks_bonds()
-        self.assertEqual(fmt.format_table_diff(self.db1, self.db2), '')
+        self.assertEqual(fmt.format_table_header_diff(self.db1, self.db2), '')
         self.db1.cursor().execute("create table futures (date text, trans text, symbol text, qty real, price real);")
         self.db1.commit()
-        self.assertEqual(fmt.format_table_diff(self.db1, self.db2),
+        self.assertEqual(fmt.format_table_header_diff(self.db1, self.db2),
                          u"""Table(futures),4
 < CREATE TABLE futures (date text, trans text, symbol text, qty real, price real)
 < 0 rows
@@ -30,10 +30,10 @@ class TestTableHeaderComparisonFormatting(unittest.TestCase):
 
     def test_add_row_format(self):
         self.__create_stocks_bonds()
-        self.assertEqual(fmt.format_table_diff(self.db1, self.db2), '')
+        self.assertEqual(fmt.format_table_header_diff(self.db1, self.db2), '')
         self.db2.cursor().execute("create table futures (date text, trans text, symbol text, qty real, price real);")
         self.db2.commit()
-        self.assertEqual(fmt.format_table_diff(self.db1, self.db2),
+        self.assertEqual(fmt.format_table_header_diff(self.db1, self.db2),
                          u"""Table(futures),4
 > CREATE TABLE futures (date text, trans text, symbol text, qty real, price real)
 > 0 rows
@@ -42,18 +42,18 @@ class TestTableHeaderComparisonFormatting(unittest.TestCase):
 
     def test_null_results(self):
         self.__create_stocks_bonds()
-        self.assertEqual(fmt.format_table_diff(self.db1, self.db2), '')
+        self.assertEqual(fmt.format_table_header_diff(self.db1, self.db2), '')
 
     def test_format_index(self):
         self.__create_stocks_bonds()
         self.db1.cursor().execute("CREATE INDEX idx_stock_symbol ON stocks (symbol);")
-        self.assertEqual(fmt.format_table_diff(self.db1, self.db2),
+        self.assertEqual(fmt.format_table_header_diff(self.db1, self.db2),
 u"""Table(stocks),4
 < CREATE INDEX idx_stock_symbol ON stocks (symbol)
 """
                          )
         self.db2.cursor().execute("CREATE INDEX idx_stock_symbol ON stocks (date);")
-        self.assertEqual(fmt.format_table_diff(self.db1, self.db2),
+        self.assertEqual(fmt.format_table_header_diff(self.db1, self.db2),
 u"""Table(stocks),4
 > CREATE INDEX idx_stock_symbol ON stocks (date)
 ---
@@ -64,7 +64,7 @@ u"""Table(stocks),4
     def test_format_index2(self):
         self.__create_stocks_bonds()
         self.db2.cursor().execute("CREATE INDEX idx_stock_dates ON stocks (date);")
-        self.assertEqual(fmt.format_table_diff(self.db1, self.db2),
+        self.assertEqual(fmt.format_table_header_diff(self.db1, self.db2),
 u"""Table(stocks),4
 > CREATE INDEX idx_stock_dates ON stocks (date)
 """
@@ -75,7 +75,7 @@ u"""Table(stocks),4
         self.__create_stocks_bonds()
         self.db1.cursor().execute("create table futures (date text, trans text, symbol text, qty real, price real);")
         self.db2.cursor().execute("create table futures (date text, symbol text, qty real, price real);")
-        self.assertEqual(fmt.format_table_diff(self.db1, self.db2),
+        self.assertEqual(fmt.format_table_header_diff(self.db1, self.db2),
                          u"""Table(futures),4
 > CREATE TABLE futures (date text, symbol text, qty real, price real)
 > 0 rows
@@ -85,7 +85,7 @@ u"""Table(stocks),4
 """
                          )
         self.db2.cursor().execute("create table options (date text, symbol text, qty real, price real);")
-        self.assertEqual(fmt.format_table_diff(self.db1, self.db2),
+        self.assertEqual(fmt.format_table_header_diff(self.db1, self.db2),
                          u"""Table(options),5
 > CREATE TABLE options (date text, symbol text, qty real, price real)
 > 0 rows

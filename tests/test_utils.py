@@ -27,9 +27,26 @@ class TestUtilityFunctions(unittest.TestCase):
                          [(0, u'date', u'text', 0, None, 0), (1, u'trans', u'text', 0, None, 0), (2, u'symbol', u'text', 0, None, 1), (3, u'qty', u'real', 0, None, 0), (4, u'price', u'real', 0, None, 0)])
 
         #Now test finding primary keys
-        self.assertEqual(utils.primary_key(self.db.cursor(), "options"), [(1, u'trans', u'text', 0, None, 1), (2, u'symbol', u'text', 0, None, 1)])
-        self.assertEqual(utils.primary_key(self.db.cursor(), "futures"), [(2, u'symbol', u'text', 0, None, 1)])
+        self.assertEqual(utils.primary_key(self.db, "options"), (u'symbol',u'trans'))
+        self.assertEqual(utils.primary_key(self.db, "futures"), (u'symbol',))
 
+    def test_primary_key_with_uniques(self):
+        self.db.cursor().execute("create table options (date text, trans text, symbol text, qty real, price real, uuid text UNIQUE, PRIMARY KEY (symbol, trans) );")
+        self.assertEqual(utils.primary_key(self.db, "options"), (u'symbol', u'trans'))
+
+    def test_indexed_column_sets(self):
+        self.db.cursor().execute("create table options (id int PRIMARY KEY, date text, trans text, symbol text, qty real, price real, uuid text UNIQUE, UNIQUE (symbol, trans) );")
+        self.db.cursor().execute("CREATE INDEX option_qty ON options (qty);")
+        self.db.cursor().execute("CREATE INDEX option_date ON options (date);")
+        self.db.cursor().execute("CREATE INDEX option_uuid ON options (uuid);")
+        self.assertEqual(utils.indexed_column_sets(self.db, 'options'), [(u'id',), (u'uuid',), (u'symbol', u'trans')])
+
+    def test_indexed_column_sets2(self):
+        self.db.cursor().execute("create table options (id int UNIQUE, date text, trans text, symbol text, qty real, price real, uuid text UNIQUE, PRIMARY KEY (symbol, trans) );")
+        self.db.cursor().execute("CREATE INDEX option_qty ON options (qty);")
+        self.db.cursor().execute("CREATE INDEX option_date ON options (date);")
+        self.db.cursor().execute("CREATE INDEX option_uuid ON options (uuid);")
+        self.assertEqual(utils.indexed_column_sets(self.db, 'options'), [(u'symbol', u'trans'), (u'id',), (u'uuid',)])
 
 suite = unittest.TestLoader().loadTestsFromTestCase(TestUtilityFunctions)
 

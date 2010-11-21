@@ -1,0 +1,7 @@
+[project]
+type = github
+
+[Github]
+repo = sqlite-diff
+owner = stucchio
+

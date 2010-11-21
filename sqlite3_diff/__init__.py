@@ -54,8 +54,8 @@ def __render_tuple_for_sql(tp):
     return "(" + ",".join(tp) + ")"
 
 def __diff_on_index(idx, tbl_name, db1, db2):
-    rows1 = db1.cursor().execute("SELECT " + __render_tuple_for_sql(idx) + ", * FROM " + tbl_name + " ORDER BY " + __render_tuple_for_sql(idx) + ";")
-    rows2 = db2.cursor().execute("SELECT " + __render_tuple_for_sql(idx) + ", * FROM " + tbl_name + " ORDER BY " + __render_tuple_for_sql(idx) + ";")
+    rows1 = db1.cursor().execute("SELECT " + ",".join(idx) + ", * FROM " + tbl_name + " ORDER BY " + ",".join(idx) + ";")
+    rows2 = db2.cursor().execute("SELECT " + ",".join(idx) + ", * FROM " + tbl_name + " ORDER BY " + ",".join(idx) + ";")
 
     def get_index(row):
         if row is None:

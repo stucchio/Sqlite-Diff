@@ -108,3 +108,16 @@ def cmp_to_key(mycmp):
         def __ne__(self, other):
             return mycmp(self.obj, other.obj) != 0
     return K
+
+def render_tuple_for_sql(tp):
+    if tp is None:
+        return ""
+    if len(tp) == 1:
+        return tp[0]
+    sqlified = []
+    for val in tp:
+        if val.__class__ == str or val.__class__ == unicode:
+            sqlified.append("'" + val + "'")
+        else:
+            sqlified.append(str(val))
+    return "(" + ", ".join(sqlified) + ")"

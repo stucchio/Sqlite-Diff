@@ -48,11 +48,6 @@ def diff_table(tbl_name, db1, db2):
         return __diff_on_index(indexes[0], tbl_name, db1, db2)
     return None
 
-def __render_tuple_for_sql(tp):
-    if len(tp) == 1:
-        return tp[0]
-    return "(" + ",".join(tp) + ")"
-
 def __diff_on_index(idx, tbl_name, db1, db2):
     rows1 = db1.cursor().execute("SELECT " + ",".join(idx) + ", * FROM " + tbl_name + " ORDER BY " + ",".join(idx) + ";")
     rows2 = db2.cursor().execute("SELECT " + ",".join(idx) + ", * FROM " + tbl_name + " ORDER BY " + ",".join(idx) + ";")

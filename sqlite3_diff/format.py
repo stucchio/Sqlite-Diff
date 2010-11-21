@@ -56,3 +56,17 @@ def format_one_table_header_diff(diff, db1, db2):
             if old:
                 result += "< " + str(old[4]) + "\n"
     return result
+
+def format_table_diff(tbl_name, diff):
+    result = ''
+    for (old, new) in diff:
+        if ((old is None) and not (new is None)):
+            result += "> INSERT INTO " + tbl_name + " VALUES " + render_tuple_for_sql(new) + ";"
+        if (not (old is None) and (new is None)):
+            result += "< INSERT INTO " + tbl_name + " VALUES " + render_tuple_for_sql(old) + ";"
+        if (not (old is None) and not (new is None)):
+            result += "< INSERT INTO " + tbl_name + " VALUES " + render_tuple_for_sql(old) + ";\n---\n"
+            result += "> INSERT INTO " + tbl_name + " VALUES " + render_tuple_for_sql(new) + ";"
+        result += "\n"
+
+    return result

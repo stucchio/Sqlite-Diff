@@ -1,6 +1,7 @@
 """ Main sqlite3_diff tools.
 """
 import sqlite3_diff.utils as utils
+import difflib
 
 def table_name_diff(cur1, cur2):
     names1 = utils.table_names(cur1)
@@ -40,6 +41,88 @@ def shared_tables(cur1, cur2):
     names1 = utils.table_names(cur1)
     names2 = utils.table_names(cur2)
     return set(names1).intersection(set(names2))
+
+def diff_table(tbl_name, db1, db2):
+    indexes = utils.indexed_column_sets(db1, tbl_name)
+    if not indexes is None:
+        return __diff_on_index(indexes[0], tbl_name, db1, db2)
+    return None
+
+def __render_tuple_for_sql(tp):
+    if len(tp) == 1:
+        return tp[0]
+    return "(" + ",".join(tp) + ")"
+
+def __diff_on_index(idx, tbl_name, db1, db2):
+    rows1 = db1.cursor().execute("SELECT " + __render_tuple_for_sql(idx) + ", * FROM " + tbl_name + " ORDER BY " + __render_tuple_for_sql(idx) + ";")
+    rows2 = db2.cursor().execute("SELECT " + __render_tuple_for_sql(idx) + ", * FROM " + tbl_name + " ORDER BY " + __render_tuple_for_sql(idx) + ";")
+
+    def get_index(row):
+        if row is None:
+            return None
+        return row[0:len(idx)]
+
+    def get_row(row):
+        if row is None:
+            return None
+        return row[len(idx):]
+
+    def get_next_row_no_error(r):
+        try:
+            return r.next()
+        except StopIteration:
+            return None
+
+    def get_next_row(rl1, rl2):
+        l = None
+        r = None
+        count = 0
+        try:
+            l = rows1.next()
+        except StopIteration:
+            count += 1
+        try:
+            r = rows2.next()
+        except StopIteration:
+            count += 1
+        if count == 2:
+            raise StopIteration("All rows empty")
+        return (l, r)
+
+    def compare_index(l,r):
+        for i in range(len(l)):
+            if l[i] != r[i]:
+                return l[i] < r[i]
+
+    try:
+        result = []
+
+        left, right = get_next_row(rows1, rows2)
+
+        while True:
+            if (left != right):
+                if (left is None or right is None): # If we've reached the end, and one table has rows left
+                    result.append((get_row(left), get_row(right)))
+                    break
+
+                lidx, ridx = get_index(left), get_index(right)
+                if (lidx == ridx): # If ID is the same, but body is not
+                    result.append( (get_row(left), get_row(right)) )
+                    break
+
+                if (lidx != ridx): # If indexes are not the same
+                    if compare_index(lidx, ridx):
+                        result.append((get_row(left), None))
+                        left = get_next_row_no_error(rows1)
+                    else:
+                        result.append((None, get_row(right)))
+                        right = get_next_row_no_error(rows2)
+
+            left, right = get_next_row(rows1, rows2)
+    except StopIteration:
+        return result
+    return result
+
 
 def table_column_diff(cur1, cur2):
     names = shared_tables(cur1, cur2)

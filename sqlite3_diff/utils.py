@@ -37,6 +37,20 @@ def primary_key(db, table_name):
     resultset = [idx for idx in indices if set(idx) == set(pk_columns)]
     return resultset[0]
 
+def __sort_by_length_alphabetical(left, right):
+    if len(left) != len(right):
+        if len(left) < len(right):
+            return -1
+        else:
+            return 1
+    for i in range(len(left)):
+        if left[i] < right[i]:
+            return -1
+        if left[i] > right[i]:
+            return 1
+    return 0
+
+
 def indexed_column_sets(db, table_name):
     """Returns a list of columns or column sets for which an index is available.
 
@@ -52,18 +66,6 @@ def indexed_column_sets(db, table_name):
     uidx = [index_info(db.cursor(), i) for i in unique_index_list(db.cursor(), table_name)]
     uidx = [idx for idx in uidx if idx != pk] # Remove the primary key
 
-    def __sort_by_length_alphabetical(left, right):
-        if len(left) != len(right):
-            if len(left) < len(right):
-                return -1
-            else:
-                return 1
-        for i in range(len(left)):
-            if left[i] < right[i]:
-                return -1
-            if left[i] > right[i]:
-                return 1
-        return 0
     uidx = sorted(uidx, key=cmp_to_key(__sort_by_length_alphabetical) ) #Sort by length
     result += uidx
     return result
